@@ -10,7 +10,8 @@ st.set_page_config(layout="wide", page_title="ROPHI ANALYTICS")
 from PIL import Image
 
 # Load local image
-image = Image.open(r"C:\Users\Rohan\PycharmProjects\Stock_Prediction\image\image.png")
+image = Image.open("image.png")
+
 
 # Display header section
 col1, col2, col3 = st.columns([1, 2, 1])
@@ -151,7 +152,7 @@ st.sidebar.info(random.choice(tips))
 st.markdown("---")
 st.markdown("""
     <div style="text-align: center; color: gray; font-size: 0.9em;">
-        🙏 Thank you for using <b>ROPHI ANALYTICS</b> — We hope it helped you make smarter investment decisions! 📊
+        🙏 Thank you for using <b>ROPHI ANALYTICS</b> — We hope it helped you make smarter investment decisions! Rohan 📚📊
     </div>
 """, unsafe_allow_html=True)
 
