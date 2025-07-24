@@ -3,15 +3,18 @@ import yfinance as yf
 import pandas as pd
 import random
 import plotly.graph_objects as go
+from PIL import Image
+from streamlit.components.v1 import html
 
 st.set_page_config(layout="wide", page_title="ROPHI ANALYTICS")
 
-# Title
-from PIL import Image
+# Inject mobile responsive meta tag
+html("""
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+""", height=0)
 
 # Load local image
 image = Image.open("image.png")
-
 
 # Display header section
 col1, col2, col3 = st.columns([1, 2, 1])
@@ -24,7 +27,6 @@ with col2:
             <p style='font-size: 1.3em; color: gray;'>Compare, Analyze, Succeed – All in One Place.</p>
         </div>
     """, unsafe_allow_html=True)
-
 
 # Sidebar: Select stock details
 st.sidebar.header("Select Stocks to Compare")
@@ -57,10 +59,10 @@ if ticker2_name != "Other (manual entry)":
     ticker2 = stock_options[ticker2_name]
 
 # Date input
-start_date = st.sidebar.date_input("📅 Start Date", pd.to_datetime("2022-01-01"))
-end_date = st.sidebar.date_input("📅 End Date", pd.to_datetime("2025-01-28"))
+start_date = st.sidebar.date_input("🗓 Start Date", pd.to_datetime("2022-01-01"))
+end_date = st.sidebar.date_input("🗓 End Date", pd.to_datetime("2025-01-28"))
 
-# Currency map for 20+ countries
+# Currency map
 currency_map = {
     ".BO": "₹", ".NS": "₹", ".TO": "C$", ".V": "C$", ".L": "£", ".AX": "A$",
     ".HK": "HK$", ".T": "¥", ".SS": "¥", ".SZ": "¥", ".KS": "₩", ".KQ": "₩",
@@ -69,14 +71,12 @@ currency_map = {
     ".BKK": "฿", ".JO": "R", ".IR": "€", ".PL": "zł"
 }
 
-# Get currency symbol based on ticker suffix
 def get_currency_symbol(ticker):
     for suffix, symbol in currency_map.items():
         if ticker.endswith(suffix):
             return symbol
-    return "$"  # Default to USD
+    return "$"
 
-# Load data function
 @st.cache_data
 def load_data(ticker, start, end):
     df = yf.download(ticker, start=start, end=end, progress=False)
@@ -86,23 +86,20 @@ def load_data(ticker, start, end):
     df.rename(columns={'Close': ticker}, inplace=True)
     return df
 
-# Load and combine data
 data1 = load_data(ticker1, start_date, end_date)
 data2 = load_data(ticker2, start_date, end_date)
 combined_data = pd.concat([data1, data2], axis=1).dropna()
 
-# Show data
 st.subheader(f"📋 Closing Price Data for {ticker1} and {ticker2}")
-st.dataframe(combined_data.tail())
+st.dataframe(combined_data.tail(), use_container_width=True)
 
-# Plot interactive line chart
 st.subheader("📈 Stock Comparison: Closing Prices")
 fig = go.Figure()
 
 fig.add_trace(go.Scatter(
     x=combined_data.index,
     y=combined_data[ticker1],
-    mode='lines',
+    mode='lines+markers',
     name=ticker1,
     hovertemplate='Date: %{x}<br>' + ticker1 + ' Price: %{y:.2f}'
 ))
@@ -110,21 +107,24 @@ fig.add_trace(go.Scatter(
 fig.add_trace(go.Scatter(
     x=combined_data.index,
     y=combined_data[ticker2],
-    mode='lines',
+    mode='lines+markers',
     name=ticker2,
     hovertemplate='Date: %{x}<br>' + ticker2 + ' Price: %{y:.2f}'
 ))
 
 fig.update_layout(
-    title=f"{ticker1} vs {ticker2} - Closing Price Comparison",
+    title=dict(text=f"{ticker1} vs {ticker2} - Closing Price Comparison", x=0.5),
     xaxis_title="Date",
     yaxis_title=f"Price ({get_currency_symbol(ticker1)}/{get_currency_symbol(ticker2)})",
     template='plotly_white',
-    hovermode='x unified'
+    hovermode='x unified',
+    legend=dict(orientation="h", x=0, y=1.1),
+    autosize=True,
+    margin=dict(l=10, r=10, t=50, b=10)
 )
-st.plotly_chart(fig, use_container_width=True)
 
-# Basic Analysis
+st.plotly_chart(fig, use_container_width=True, config={'responsive': True})
+
 st.subheader("📊 Basic Analysis")
 for ticker in [ticker1, ticker2]:
     if ticker in combined_data:
@@ -132,9 +132,9 @@ for ticker in [ticker1, ticker2]:
         avg = combined_data[ticker].mean()
         vol = combined_data[ticker].std()
         ret = combined_data[ticker].pct_change().mean() * 100
-        currency_symbol = get_currency_symbol(ticker)
-        st.write(f"• Average Closing Price: {currency_symbol}{avg:.2f}")
-        st.write(f"• Volatility (Standard Deviation): {currency_symbol}{vol:.2f}")
+        symbol = get_currency_symbol(ticker)
+        st.write(f"• Average Closing Price: {symbol}{avg:.2f}")
+        st.write(f"• Volatility (Standard Deviation): {symbol}{vol:.2f}")
         st.write(f"• Average Daily Return: {ret:.2f}%")
 
 # Beginner Tips
@@ -148,11 +148,9 @@ tips = [
 st.sidebar.markdown("## 👶 Beginner Tip")
 st.sidebar.info(random.choice(tips))
 
-# Footer
 st.markdown("---")
 st.markdown("""
     <div style="text-align: center; color: gray; font-size: 0.9em;">
         🙏 Thank you for using <b>ROPHI ANALYTICS</b> — We hope it helped you make smarter investment decisions! Rohan 📚📊
     </div>
 """, unsafe_allow_html=True)
-
